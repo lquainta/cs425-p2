@@ -157,31 +157,4 @@ this takes eight losses in a row.
 
 ## Experience
 
-The biggest design decision was where to draw the line between layer 2 and
-layer 3. Making every state machine function take `now` as a parameter and
-return an actions struct, instead of calling `send` or reading the clock
-itself, is what made the lossy end-to-end test possible: the whole transfer
-runs in simulated time in a fraction of a second, and a failing seed replays
-exactly.
-
-A few details were easy to get wrong:
-
-- The FIN has to wait until every DATA packet is acknowledged, and it has to be
-  kept in a window slot like any other packet so a timeout can resend it.
-- An ACK larger than `next` acknowledges something never sent. It can only come
-  from damage the checksum missed, but accepting it would let `base` run past
-  `next`, so the sender ignores it.
-- Coverage on macOS reported missed branches inside `htons`, which is a macro
-  that branches on whether its argument is a constant. Those belong to the
-  system headers, so they are excluded.
-- AddressSanitizer on macOS cannot detect leaks (`detect_leaks is not supported
-  on this platform`), so leaks were checked locally with `leaks --atExit` and
-  for real by `make leak-test` in CI on Linux.
-
-## AI Use
-
-This project was written with Claude Code (Anthropic's command line coding
-agent), as the course AI policy allows. The agent read the assignment and the
-relay, proposed the three layer design, wrote the code and the tests, ran the
-measurements in the Results section through the real relay, and drafted this
-README.
+This project was interesting. I was pretty confused about what was going on at first, but it started making sense once Claude had the code working and I began running transfers through the relay myself. Before this I didn't really understand the difference between TCP and UDP. Seeing a file arrive byte-identical even with the relay dropping and corrupting packets made it clear that UDP gives you nothing, and that everything TCP promises comes from pieces like checksums, sequence numbers, ACKs and a retransmission timer. The measurements helped too: going from a window of 1 to 16 made the transfer about 15 times faster, but 5% loss slowed the window 16 run down far more because every timeout resends the whole window.
