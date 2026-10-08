@@ -54,7 +54,6 @@ dkms.conf
 /myprogram
 /build
 /.vscode/c_cpp_properties.json
-/cs425_relay.py
 .DS_Store
 *.textClipping
 *.bin
